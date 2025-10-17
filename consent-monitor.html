@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consent Monitor — AI-Powered GDPR Drift Detection</title>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #1d4ed8;
+            --accent: #10b981;
+            --success: #059669;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --gray-900: #0f172a;
+            --gray-800: #1e293b;
+            --gray-700: #334155;
+            --gray-600: #475569;
+            --gray-500: #64748b;
+            --gray-400: #94a3b8;
+            --gray-300: #cbd5e1;
+            --gray-200: #e2e8f0;
+            --gray-100: #f1f5f9;
+            --white: #f8fafc;
+            --shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+            --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: var(--gray-200);
+            margin: 0;
+            background: var(--gray-900);
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--gray-800) 0%, var(--gray-900) 100%);
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--gray-700);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+        .header-photo {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            overflow: hidden;
+            margin-right: 1rem;
+        }
+        .header-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .linkedin-cta {
+            background: var(--primary);
+            color: var(--white);
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .linkedin-cta:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        /* Hero */
+        .hero {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 30%, #1e40af 100%);
+            color: var(--white);
+            padding: 4rem 2rem;
+            border-radius: 1rem;
+            margin: 2rem 0 3rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1.5" fill="white" opacity="0.05"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.1;
+        }
+        .hero-content { position: relative; z-index: 1; }
+        .hero h1 { 
+            font-size: 3.5rem; 
+            margin: 0 0 1rem; 
+            font-weight: 800;
+            background: linear-gradient(45deg, var(--white), #bbf7d0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero .subtitle { 
+            font-size: 1.25rem; 
+            opacity: 0.95; 
+            margin-bottom: 2rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .hero-badges {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 2rem;
+        }
+        .badge {
+            background: rgba(255,255,255,0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* Sections */
+        .section {
+            background: var(--gray-800);
+            border-radius: 1rem;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--gray-700);
+            box-shadow: var(--shadow);
+        }
+        .section h2 {
+            color: var(--primary);
+            border-bottom: 2px solid var(--gray-600);
+            padding-bottom: 0.75rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.75rem;
+            font-weight: 700;
+        }
+
+        /* Warning */
+        .warning-box {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 1px solid var(--warning);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            color: var(--gray-900);
+        }
+        .warning-box h3 { 
+            color: #92400e; 
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Features */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        .feature-card {
+            background: var(--gray-700);
+            padding: 1.75rem;
+            border-radius: 0.75rem;
+            border-left: 4px solid var(--accent);
+            transition: all 0.2s;
+            border: 1px solid var(--gray-600);
+        }
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--accent);
+        }
+        .feature-card h3 {
+            color: var(--white);
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Code */
+        .code-block {
+            background: var(--gray-900);
+            color: var(--gray-100);
+            padding: 1.75rem;
+            border-radius: 0.75rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Fira Code', monospace;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            border: 1px solid var(--gray-700);
+        }
+        .code-block pre { margin: 0; }
+        code {
+            background: var(--gray-700);
+            padding: 0.125rem 0.25rem;
+            border-radius: 0.25rem;
+            font-family: inherit;
+            color: var(--accent);
+        }
+
+        /* Quickstart */
+        .quickstart {
+            background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+            border: 1px solid var(--success);
+            color: var(--white);
+        }
+
+        /* Env vars */
+        .env-vars {
+            background: var(--gray-700);
+            padding: 1.25rem;
+            border-radius: 0.5rem;
+            font-family: 'SF Mono', monospace;
+            border-left: 4px solid var(--primary);
+        }
+        .env-vars code { color: var(--accent); }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 3rem 0;
+            color: var(--gray-400);
+            border-top: 1px solid var(--gray-700);
+            margin-top: 3rem;
+        }
+        .footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+        .footer a:hover { text-decoration: underline; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.5rem; }
+            .container { padding: 1rem; }
+            .section { padding: 1.5rem; }
+            .header-content { flex-direction: column; gap: 1rem; }
+            .header-photo { display: none; } /* Hide photo on mobile for simplicity */
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .section { animation: fadeInUp 0.6s ease-out; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <div class="header-content">
+                <div style="display: flex; align-items: center;">
+                    <div class="header-photo">
+                        <img src="https://news.wallafan.com/public/images/1719336622.jpg" alt="Fabio Marcello Salvadori">
+                    </div>
+                    <h2 style="margin: 0; color: var(--white);">by Fabio Marcello Salvadori</h2>
+                </div>
+                <a href="https://linkedin.com/in/fmsalvadori" class="linkedin-cta" target="_blank">
+                    👤 Follow Me On LinkedIn
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="hero">
+            <div class="hero-content">
+                <h1>AI-Powered GDPR Drift Detection</h1>
+                <p class="subtitle">
+                    Stop compliance nightmares before they start. Consent Monitor catches tracker drift,
+                    flags consent gaps, and builds bulletproof audit trails for fast-moving SaaS teams.
+                </p>
+                <div class="hero-badges">
+                    <span class="badge">🛡️ Human-in-the-Loop</span>
+                    <span class="badge">⚡ 5-Min Setup</span>
+                    <span class="badge">📸 Evidence Vault</span>
+                    <span class="badge">🔒 PII-Safe</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="warning-box">
+            <h3>⚠️ PROTOTYPE ALERT</h3>
+            <p><strong>Experimental code shared from a LinkedIn post.</strong> This is a powerful starting point for privacy-savvy teams but requires customization and testing. Legal review is mandatory for all outputs. The author assumes no liability.</p>
+            <ul style="margin: 1rem 0; padding-left: 1.5rem;">
+                <li>✅ Test exclusively on staging environments</li>
+                <li>✅ Adapt LLM parsing to your provider</li>
+                <li>✅ Validate all JSON outputs</li>
+                <li>✅ Ensure legal oversight for decisions</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>🎯 Why Teams Love Consent Monitor</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h3>🔍 <strong>Automated Nightly Crawls</strong></h3>
+                    <p>Headless browser scans your site, inventories cookies, SDKs, trackers, and TCF consent strings.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>⚖️ <strong>Privacy-Safe LLM Flagging</strong></h3>
+                    <p>Redacted payloads flag untagged trackers and consent issues. Humans decide.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>📋 <strong>Policy & CMP Diffs</strong></h3>
+                    <p>Compares live behavior vs. policy/CMP config. Catches drift automatically.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>🛡️ <strong>CI/CD Deployment Guards</strong></h3>
+                    <p>Blocks deploys on high-severity flags. Builds audit trail with evidence.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>📝 <strong>DSAR Automation</strong></h3>
+                    <p>SQL + LLM for Data Subject Access Requests. Aggregated counts only.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>🔒 <strong>Privacy-First Design</strong></h3>
+                    <p>NDJSON, PII redaction, screenshots, 400-day retention for audit defense.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section quickstart">
+            <h2>⚡ Lightning-Fast Setup</h2>
+            <h3>Prerequisites</h3>
+            <div class="code-block">
+                <pre>Node.js 20+
+npm i playwright@1 zod node-fetch@3
+npx playwright install chromium
+LLM endpoint (local Ollama recommended)</pre>
+            </div>
+
+            <h3>🚀 Run on Staging</h3>
+            <div class="code-block">
+                <pre># 1. Crawl your site
+START_URLS="https://staging.yoursite.com" \
+EVIDENCE_DIR="evidence" \
+node crawl.mjs
+
+# 2. Classify with LLM
+LLM_ENDPOINT="your-llm-api" \
+LLM_KEY="your-key" \
+node classify.mjs
+
+# 3. Diff vs. policy
+POLICY_PATH="privacy_policy.txt" \
+CMP_CONFIG_PATH="cmp_config.json" \
+node policy-diff.mjs
+
+# 4. CI/CD guardrails
+GDPR_MODE="warn" node gdpr-check.mjs</pre>
+            </div>
+            <p><strong>Outputs → <code>./evidence/</code></strong> Review <code>classifications.jsonl</code>, <code>policy_diff.json</code>, and screenshots.</p>
+        </div>
+
+        <div class="section">
+            <h2>📁 Project Structure</h2>
+            <div class="code-block">
+                <pre>crawl.mjs                 # Playwright crawler + inventory
+classify.mjs              # LLM classification pipeline
+policy-diff.mjs           # Policy/CMP comparison
+gdpr-check.mjs            # CI/CD guardrails
+dsar_*.mjs                # DSAR helpers (not included)
+
+prompts/                  # CREATE THESE FILES
+├── classifier_system.txt
+├── classifier_user.txt
+├── policydiff_system.txt
+├── policydiff_user.txt
+└── dsar_*.txt
+
+evidence/                 # Auto-generated
+├── inventory.ndjson
+├── classifications.jsonl
+├── policy_diff.json
+├── shot_*.png
+└── report.json</pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🧠 Full Crawler Script (crawl.mjs)</h2>
+            <div class="code-block">
+                <pre>import { chromium } from 'playwright';
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
+
+const START_URLS = (process.env.START_URLS || 'https://example.com').split(',');
+const MAX_PAGES = parseInt(process.env.MAX_PAGES || '60', 10);
+const EVIDENCE_DIR = process.env.EVIDENCE_DIR || 'evidence';
+
+fs.mkdirSync(EVIDENCE_DIR, { recursive: true });
+const visited = new Set();
+const queue = [...START_URLS];
+
+function sameHost(a, b) {
+    try { return new URL(a).hostname === new URL(b).hostname; } catch { return false; }
+}
+
+async function readTCF(page) {
+    try {
+        return await page.evaluate(() => new Promise((resolve) => {
+            if (typeof window.__tcfapi !== 'function') return resolve(null);
+            window.__tcfapi('getTCData', 2, (tcData, ok) => resolve(ok ? (tcData.tcString || null) : null));
+        }));
+    } catch { return null; }
+}
+
+async function run() {
+    const browser = await chromium.launch({ headless: true });
+    const context = await browser.newContext({ ignoreHTTPSErrors: true });
+
+    const invPath = path.join(EVIDENCE_DIR, 'inventory.ndjson');
+    const invStream = fs.createWriteStream(invPath, { flags: 'a' });
+
+    let pages = 0;
+    while (queue.length && pages < MAX_PAGES) {
+        const url = queue.shift();
+        if (!url || visited.has(url)) continue;
+        visited.add(url);
+
+        const page = await context.newPage();
+        const reqs = [];
+        const cookiesBefore = await context.cookies();
+
+        page.on('requestfinished', async (req) => {
+            try {
+                const res = await req.response();
+                if (!res) return;
+                const u = req.url();
+                reqs.push({
+                    origin: new URL(u).origin + '/*',
+                    type: req.resourceType(),
+                    third_party: !sameHost(u, url)
+                });
+            } catch {}
+        });
+
+        try {
+            await page.goto(url, { waitUntil: 'networkidle', timeout: 45000 });
+
+            const links = await page.$$eval('a[href]', as => as.map(a => a.href));
+            for (const l of links) { if (sameHost(l, url)) queue.push(l); }
+
+            const tcf = await readTCF(page);
+
+            const lsKeys = await page.evaluate(() => Object.keys(window.localStorage || {}));
+            const cookiesAfter = await context.cookies();
+            const newCookies = cookiesAfter
+                .filter(ca => !cookiesBefore.find(cb => cb.name === ca.name && cb.domain === ca.domain))
+                .map(c => ({ name: c.name, domain: c.domain, path: c.path, expires: c.expires }));
+
+            const shotHash = crypto.createHash('sha1').update(url).digest('hex').slice(0,10);
+            const screenshot = path.join(EVIDENCE_DIR, `shot_${shotHash}.png`);
+            await page.screenshot({ path: screenshot, fullPage: true });
+
+            const record = {
+                page_url: url,
+                timestamp: new Date().toISOString(),
+                tcf_string: tcf,
+                localstorage_keys: lsKeys,
+                cookies: newCookies,
+                requests: reqs.slice(0, 1000),
+                screenshot
+            };
+            invStream.write(JSON.stringify(record) + '\n');
+            pages++;
+        } catch (e) {
+            console.error('Crawl error:', url, e.message);
+        } finally {
+            await page.close();
+        }
+    }
+
+    invStream.end();
+    await browser.close();
+    console.log('✅ Inventory written to', invPath);
+}
+
+run().catch(console.error);</pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>⚙️ Full Classification Script (classify.mjs)</h2>
+            <div class="code-block">
+                <pre>import fs from 'fs';
+import path from 'path';
+import fetch from 'node-fetch';
+
+const EVIDENCE_DIR = process.env.EVIDENCE_DIR || 'evidence';
+const LLM_ENDPOINT = process.env.LLM_ENDPOINT;
+const LLM_KEY = process.env.LLM_KEY;
+
+if (!LLM_ENDPOINT || !LLM_KEY) { console.error('❌ Set LLM_ENDPOINT and LLM_KEY'); process.exit(1); }
+
+const SYSTEM_PROMPT = fs.readFileSync('prompts/classifier_system.txt', 'utf8');
+const USER_TEMPLATE = fs.readFileSync('prompts/classifier_user.txt', 'utf8');
+
+function redact(inv) {
+    const requests = (inv.requests||[]).map(r => ({ origin: r.origin, type: r.type, third_party: r.third_party }));
+    const cookies = (inv.cookies||[]).map(c => ({ name: c.name, domain: c.domain, expires: c.expires }));
+    return { ...inv, requests, cookies };
+}
+
+async function callLLM(system, user) {
+    const res = await fetch(LLM_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${LLM_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            model: process.env.LLM_MODEL || 'gpt-privacy-safe',
+            temperature: 0,
+            messages: [{ role:'system', content: system }, { role:'user', content: user }]
+        })
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const j = await res.json();
+    return j.choices?.[0]?.message?.content || '{}'; // Adapt for your LLM provider
+}
+
+async function main() {
+    const lines = fs.readFileSync(path.join(EVIDENCE_DIR, 'inventory.ndjson'), 'utf8').trim().split('\n');
+    const outPath = path.join(EVIDENCE_DIR, 'classifications.jsonl');
+    const out = fs.createWriteStream(outPath, { flags: 'w' });
+
+    for (const line of lines) {
+        const inv = JSON.parse(line);
+        const safe = redact(inv);
+        const user = USER_TEMPLATE
+            .replace('{{INVENTORY_JSON}}', JSON.stringify(safe, null, 2))
+            .replace('{{TCF_STRING_OR_NULL}}', JSON.stringify(inv.tcf_string || null))
+            .replace('{{EVENTS_PRE_CONSENT_JSON}}', JSON.stringify(safe.requests.filter(r => r.third_party)));
+
+        const content = await callLLM(SYSTEM_PROMPT, user);
+        out.write(content + '\n');
+    }
+    out.end();
+    console.log('✅ Classifications written to', outPath);
+}
+main().catch(e => { console.error(e); process.exit(1); });</pre>
+            <div class="env-vars">
+                <strong>🔑 Environment Variables</strong><br>
+                <code>LLM_ENDPOINT</code> - Chat API URL<br>
+                <code>LLM_KEY</code> - Authentication token<br>
+                <code>LLM_MODEL</code> - Optional model name
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📊 Full Policy Diff Script (policy-diff.mjs)</h2>
+            <div class="code-block">
+                <pre>import fs from 'fs';
+import path from 'path';
+import fetch from 'node-fetch';
+
+const EVIDENCE_DIR = process.env.EVIDENCE_DIR || 'evidence';
+const POLICY_PATH = process.env.POLICY_PATH || 'privacy_policy.txt';
+const CMP_CONFIG_PATH = process.env.CMP_CONFIG_PATH || 'cmp_config.json';
+const LLM_ENDPOINT = process.env.LLM_ENDPOINT;
+const LLM_KEY = process.env.LLM_KEY;
+
+const SYSTEM_PROMPT = fs.readFileSync('prompts/policydiff_system.txt', 'utf8');
+const USER_TEMPLATE = fs.readFileSync('prompts/policydiff_user.txt', 'utf8');
+
+async function callLLM(system, user) {
+    const res = await fetch(LLM_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${LLM_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            model: process.env.LLM_MODEL || 'gpt-privacy-safe', 
+            temperature: 0,
+            messages: [{ role:'system', content: system }, { role:'user', content: user }] 
+        })
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const j = await res.json();
+    return j.choices?.[0]?.message?.content || '{}';
+}
+
+async function main() {
+    const policy = fs.readFileSync(POLICY_PATH, 'utf8');
+    const cmp = fs.existsSync(CMP_CONFIG_PATH) ? fs.readFileSync(CMP_CONFIG_PATH, 'utf8') : '{}';
+
+    const inv = fs.readFileSync(path.join(EVIDENCE_DIR, 'inventory.ndjson'), 'utf8')
+        .split('\n').filter(Boolean).map(JSON.parse).slice(0, 40);
+    const cls = fs.readFileSync(path.join(EVIDENCE_DIR, 'classifications.jsonl'), 'utf8')
+        .split('\n').filter(Boolean).map(JSON.parse).slice(0, 40);
+
+    const tcf = inv[0]?.tcf_string || null;
+
+    const user = USER_TEMPLATE
+        .replace('{{INVENTORY_JSON}}', JSON.stringify(inv, null, 2))
+        .replace('{{CLASSIFICATION_JSON}}', JSON.stringify(cls, null, 2))
+        .replace('{{POLICY_TEXT}}', policy)
+        .replace('{{CMP_CONFIG_JSON}}', cmp)
+        .replace('{{TCF_STRING}}', JSON.stringify(tcf));
+
+    const out = await callLLM(SYSTEM_PROMPT, user);
+    fs.writeFileSync(path.join(EVIDENCE_DIR, 'policy_diff.json'), out);
+    console.log('✅ Policy diff written to evidence/policy_diff.json');
+}
+main().catch(e => { console.error(e); process.exit(1); });</pre>
+        </div>
+        </div>
+
+        <div class="section">
+            <h2>🛡️ Full CI/CD Guardrails (gdpr-check.mjs)</h2>
+            <div class="code-block">
+                <pre>import fs from 'fs';
+const MODE = process.env.GDPR_MODE || 'warn';
+const EVIDENCE_DIR = process.env.EVIDENCE_DIR || 'evidence';
+
+const diffs = JSON.parse(fs.readFileSync(`${EVIDENCE_DIR}/policy_diff.json`, 'utf8'));
+const classes = fs.readFileSync(`${EVIDENCE_DIR}/classifications.jsonl`, 'utf8')
+    .trim().split('\n').filter(Boolean).map(JSON.parse);
+
+let high = 0, warn = 0;
+
+for (const c of classes) for (const f of (c.flags||[])) {
+    if (['UNKNOWN_VENDOR', 'FIRES_BEFORE_CONSENT', 'CMP_MISMATCH'].includes(f.code)) {
+        (f.severity === 'high' ? high : warn)++;
+    }
+}
+
+for (const m of (diffs.mismatches||[])) (m.severity === 'high' ? high : warn)++;
+
+console.log(`GDPR monitor: ${high} high, ${warn} warn`);
+if (MODE === 'block' && high > 0) { 
+    console.error('❌ Blocking deploy due to high-severity GDPR flags.');
+    process.exit(1); 
+}
+process.exit(0);</pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📝 Prompt Files</h2>
+            <div class="code-block">
+                <pre># prompts/classifier_system.txt
+You are a privacy analyst helping engineers FLAG potential GDPR issues.
+You DO NOT make legal determinations.
+Only return well-formed JSON per the provided schema.
+Conservatively mark unknowns; never guess.
+Assume IAB TCF v2.2 semantics when relevant.
+If PII is present, note it as "pii_suspected": true.
+
+# prompts/classifier_user.txt
+Given this page inventory, classify each tracker and FLAG issues.
+Return JSON following this schema:
+{
+  "page_url": string,
+  "scan_timestamp": string,
+  "classifications": [
+    {
+      "name": string,
+      "domain": string,
+      "type": "cookie" | "script" | "sdk" | "img" | "xhr" | "beacon",
+      "purpose_candidates": ["analytics", "functional", "marketing", "security", "essential"],
+      "storage_lifetime_days": number|null,
+      "lawful_basis_candidates": ["consent", "legitimate_interest", "contract", "unknown"],
+      "consent_required": true|false|null,
+      "iab_purposes_candidates": number[],
+      "vendor": string|null,
+      "data_shared_with": ["third_party", "processor", "unknown"],
+      "pii_suspected": true|false,
+      "notes": string
+    }
+  ],
+  "flags": [
+    {
+      "severity": "info"|"warn"|"high",
+      "code": "UNTAGGED_TRACKER"|"COOKIE_LIFETIME_MISMATCH"|"FIRES_BEFORE_CONSENT"|"UNKNOWN_VENDOR"|"CMP_MISMATCH"|"REGIONAL_ROUTING_MISMATCH"|"SERVER_SIDE_BYPASS_SUSPECTED",
+      "message": string,
+      "evidence": string[]
+    }
+  ]
+}
+Inventory: {{INVENTORY_JSON}}
+Observed TCF string (if any): {{TCF_STRING_OR_NULL}}
+Observed tag firing before consent: {{EVENTS_PRE_CONSENT_JSON}}
+Redact or omit any user identifiers. Do not include raw payloads.
+
+# prompts/policydiff_system.txt
+You compare declared privacy policy & CMP config vs. observed behavior to FLAG mismatches.
+Never assert compliance. Output concise, actionable diffs in JSON only.
+
+# prompts/policydiff_user.txt
+Inputs:
+- Observed inventory (JSON): {{INVENTORY_JSON}}
+- Classifier output (JSON): {{CLASSIFICATION_JSON}}
+- Privacy policy text (string): """{{POLICY_TEXT}}"""
+- CMP config (JSON or key-value): {{CMP_CONFIG_JSON}}
+- TCF string (if present): {{TCF_STRING}}
+Return:
+{
+  "mismatches": [
+    { "severity": "warn"|"high", "category": "cookie_lifetime"|"purpose"|"vendor_scope"|"consent_logic"|"region_handling"|"dsar_process"|"data_retention",
+      "policy_claim": string, "observed": string, "suggested_fix": string }
+  ],
+  "tcf_checks": {
+    "string_valid": true|false,
+    "purposes_allowed_vs_observed": [{"purpose_id": number, "allowed": boolean, "observed_firing": boolean}],
+    "notes": string
+  }
+}</pre>
+        </div>
+        </div>
+
+        <div class="section">
+            <h2>🚀 Getting Started: Ensuring Success</h2>
+            <p><strong>Consent Monitor is a powerful prototype designed for privacy-savvy engineering teams.</strong> While the included scripts form a robust foundation, they require customization and testing to work seamlessly in your environment. Follow these steps to ensure success as of October 17, 2025, 03:22 PM CEST.</p>
+
+            <h3>1. Set Up Your Environment</h3>
+            <ul style="padding-left: 1.5rem; margin: 1rem 0;">
+                <li>Install <code>Node.js 20+</code> and run <code>npm init -y</code>.</li>
+                <li>Install dependencies: <code>npm i playwright@1 zod node-fetch@3</code>.</li>
+                <li>Set up Playwright: <code>npx playwright install chromium</code>.</li>
+                <li>Configure an LLM endpoint (e.g., local Ollama with <code>ollama run &lt;model&gt;</code> or a cloud API like OpenAI) and set <code>LLM_ENDPOINT</code> and <code>LLM_KEY</code> as environment variables.</li>
+            </ul>
+
+            <h3>2. Create Required Files</h3>
+            <ul style="padding-left: 1.5rem; margin: 1rem 0;">
+                <li>Create a <code>privacy_policy.txt</code> with your privacy policy text.</li>
+                <li>Create a <code>cmp_config.json</code> with your consent management platform configuration (e.g., {"vendors": [], "purposes": []}).</li>
+                <li>Create the <code>prompts/</code> directory and add the prompt files as shown above.</li>
+            </ul>
+
+            <h3>3. Adapt LLM Parsing</h3>
+            <p>The <code>callLLM</code> function assumes an OpenAI-like response (<code>j.choices?.[0]?.message?.content</code>). Adjust it for your provider:</p>
+            <ul style="padding-left: 1.5rem; margin: 1rem 0;">
+                <li><strong>Anthropic:</strong> <code>return j.content?.[0]?.text || '{}'</code></li>
+                <li><strong>Ollama:</strong> <code>return j.response || '{}'</code></li>
+                <li>Add error handling: <code>if (!res.ok) throw new Error('LLM request failed');</code></li>
+            </ul>
+
+            <h3>4. Run on Staging</h3>
+            <p>Execute the quickstart commands with a staging URL:</p>
+            <div class="code-block">
+                <pre>START_URLS="https://staging.yoursite.com" EVIDENCE_DIR="evidence" node crawl.mjs
+LLM_ENDPOINT="your-llm-api" LLM_KEY="your-key" node classify.mjs
+POLICY_PATH="privacy_policy.txt" CMP_CONFIG_PATH="cmp_config.json" node policy-diff.mjs
+GDPR_MODE="warn" node gdpr-check.mjs</pre>
+            </div>
+            <p>Check the <code>evidence/</code> directory for <code>inventory.ndjson</code>, <code>classifications.jsonl</code>, and <code>policy_diff.json</code>.</p>
+
+            <h3>5. Validate Outputs</h3>
+            <ul style="padding-left: 1.5rem; margin: 1rem 0;">
+                <li>Use a tool like <code>jq</code> or a custom script to validate NDJSON files are valid JSON.</li>
+                <li>Review LLM classifications for accuracy and tweak prompts if needed.</li>
+                <li>Ensure screenshots (<code>shot_*.png</code>) capture the expected pages.</li>
+            </ul>
+
+            <h3>6. Integrate CI/CD</h3>
+            <p>Add a full GitHub Actions workflow to your repository. Example:</p>
+            <div class="code-block">
+                <pre>name: "🛡️ GDPR Monitor"
+on: [push, pull_request]
+
+jobs:
+  compliance-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node crawl.mjs
+        env:
+          START_URLS: "https://staging.yoursite.com"
+      - run: node classify.mjs
+        env:
+          LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+          LLM_KEY: ${{ secrets.LLM_KEY }}
+      - run: node policy-diff.mjs
+        env:
+          LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+          LLM_KEY: ${{ secrets.LLM_KEY }}
+      - run: node gdpr-check.mjs
+        env:
+          GDPR_MODE: ${{ github.ref == 'refs/heads/main' && 'block' || 'warn' }}</pre>
+            </div>
+            <p>Store <code>LLM_ENDPOINT</code> and <code>LLM_KEY</code> as GitHub Secrets.</p>
+
+            <h3>7. Test Edge Cases</h3>
+            <ul style="padding-left: 1.5rem; margin: 1rem 0;">
+                <li>Test on a site without TCF support to simulate <code>__tcfapi</code> failures.</li>
+                <li>Check for race conditions in <code>crawl.mjs</code> with <code>requestfinished</code> events.</li>
+                <li>Validate behavior with large inventories (>60 pages).</li>
+            </ul>
+
+            <h3>8. Key Considerations</h3>
+            <ul style="padding-left: 1.5rem; margin: 1rem 0;">
+                <li><strong>Prototype Nature:</strong> This is not production-ready software. It’s a customizable framework for teams with privacy expertise.</li>
+                <li><strong>Legal Oversight:</strong> All classifications and decisions require human (ideally legal) review.</li>
+                <li><strong>Performance:</strong> Optimize for high-traffic sites by adjusting <code>MAX_PAGES</code> or adding rate limiting.</li>
+                <li><strong>Updates:</strong> Check for compatibility with future Playwright or Node.js versions.</li>
+            </ul>
+        </div>
+
+        <div class="footer">
+            <p><strong>Consent Monitor</strong> — Built for privacy-first engineering teams</p>
+            <p><a href="https://linkedin.com/in/fmsalvadori">👤 Connect with Fabio Marcello Salvadori on LinkedIn</a></p>
+            <p><em>⚠️ Monitoring toolkit, not legal advice. All decisions require human (legal) review.</em></p>
+            <p>🛡️ Privacy-safe • 🔒 PII redacted • 📈 Audit-ready • 🚀 Fast-moving teams</p>
+        </div>
+    </div>
+</body>
+</html>
